@@ -6,6 +6,9 @@
 
     <parameter name="CUSTOMER_NAME" class="java.lang.String"/>
     <parameter name="GRAND_TOTAL"   class="java.lang.Double"/>
+    <parameter name="TOTAL_QTY"     class="java.lang.Integer"/>
+    <parameter name="ORDER_REF"     class="java.lang.String"/>
+    <parameter name="ORDER_TIME"    class="java.lang.String"/>
 
     <queryString>
         <![CDATA[SELECT * FROM orders]]>
@@ -16,45 +19,82 @@
     <field name="total"     class="java.lang.Double"/>
 
     <title>
-        <band height="80">
+        <band height="140">
             <staticText>
                 <reportElement x="0" y="5" width="555" height="30"/>
                 <textElement textAlignment="Center">
-                    <font size="20" isBold="true"/>
+                    <font size="22" isBold="true"/>
                 </textElement>
-                <text><![CDATA[RECEIPT]]></text>
+                <text><![CDATA[BIGTASK Restaurant]]></text>
             </staticText>
             <staticText>
-                <reportElement x="0" y="40" width="555" height="20"/>
-                <textElement textAlignment="Center"/>
-                <text><![CDATA[Bigtask Restaurant Management System]]></text>
+                <reportElement x="0" y="35" width="555" height="18"/>
+                <textElement textAlignment="Center">
+                    <font size="11"/>
+                </textElement>
+                <text><![CDATA[Official Receipt]]></text>
             </staticText>
+            <line>
+                <reportElement x="0" y="58" width="555" height="1"/>
+            </line>
             <textField>
-                <reportElement x="0" y="60" width="555" height="20"/>
-                <textElement textAlignment="Center"/>
+                <reportElement x="0" y="64" width="555" height="18"/>
+                <textElement textAlignment="Center">
+                    <font size="10"/>
+                </textElement>
+                <textFieldExpression>
+                    <![CDATA["Order Ref: " + $P{ORDER_REF}]]>
+                </textFieldExpression>
+            </textField>
+            <textField>
+                <reportElement x="0" y="84" width="555" height="18"/>
+                <textElement textAlignment="Center">
+                    <font size="10"/>
+                </textElement>
+                <textFieldExpression>
+                    <![CDATA["Date & Time: " + $P{ORDER_TIME}]]>
+                </textFieldExpression>
+            </textField>
+            <textField>
+                <reportElement x="0" y="104" width="555" height="18"/>
+                <textElement textAlignment="Center">
+                    <font size="10"/>
+                </textElement>
                 <textFieldExpression>
                     <![CDATA["Customer: " + $P{CUSTOMER_NAME}]]>
                 </textFieldExpression>
             </textField>
+            <line>
+                <reportElement x="0" y="127" width="555" height="1"/>
+            </line>
         </band>
     </title>
 
     <columnHeader>
         <band height="25">
             <staticText>
-                <reportElement x="0"   y="0" width="280" height="25" backcolor="#FF9800" mode="Opaque"/>
-                <textElement textAlignment="Center"><font isBold="true"/></textElement>
+                <reportElement x="0" y="0" width="280" height="25"
+                    backcolor="#1B4332" forecolor="#FFFFFF" mode="Opaque"/>
+                <textElement textAlignment="Center">
+                    <font isBold="true"/>
+                </textElement>
                 <text><![CDATA[Item]]></text>
             </staticText>
             <staticText>
-                <reportElement x="280" y="0" width="100" height="25" backcolor="#FF9800" mode="Opaque"/>
-                <textElement textAlignment="Center"><font isBold="true"/></textElement>	
+                <reportElement x="280" y="0" width="100" height="25"
+                    backcolor="#1B4332" forecolor="#FFFFFF" mode="Opaque"/>
+                <textElement textAlignment="Center">
+                    <font isBold="true"/>
+                </textElement>
                 <text><![CDATA[Qty]]></text>
             </staticText>
             <staticText>
-                <reportElement x="380" y="0" width="175" height="25" backcolor="#FF9800" mode="Opaque"/>
-                <textElement textAlignment="Center"><font isBold="true"/></textElement>
-                <text><![CDATA[Amount]]></text>
+                <reportElement x="380" y="0" width="175" height="25"
+                    backcolor="#1B4332" forecolor="#FFFFFF" mode="Opaque"/>
+                <textElement textAlignment="Center">
+                    <font isBold="true"/>
+                </textElement>
+                <text><![CDATA[Amount (₱)]]></text>
             </staticText>
         </band>
     </columnHeader>
@@ -62,7 +102,7 @@
     <detail>
         <band height="20">
             <textField>
-                <reportElement x="0"   y="0" width="280" height="20"/>
+                <reportElement x="0" y="0" width="280" height="20"/>
                 <textFieldExpression><![CDATA[$F{item_name}]]></textFieldExpression>
             </textField>
             <textField>
@@ -73,26 +113,58 @@
             <textField>
                 <reportElement x="380" y="0" width="175" height="20"/>
                 <textElement textAlignment="Center"/>
-                <textFieldExpression><![CDATA[$F{total}]]></textFieldExpression>
+                <textFieldExpression>
+                    <![CDATA["₱" + String.format("%.2f", $F{total})]]>
+                </textFieldExpression>
             </textField>
         </band>
     </detail>
 
     <summary>
-        <band height="40">
+        <band height="80">
             <line>
                 <reportElement x="0" y="5" width="555" height="1"/>
             </line>
             <staticText>
-                <reportElement x="280" y="10" width="100" height="20"/>
-                <textElement textAlignment="Center"><font isBold="true" size="12"/></textElement>
-                <text><![CDATA[TOTAL:]]></text>
+                <reportElement x="180" y="12" width="200" height="18"/>
+                <textElement textAlignment="Right">
+                    <font isBold="true" size="11"/>
+                </textElement>
+                <text><![CDATA[Total Items Ordered:]]></text>
             </staticText>
             <textField>
-                <reportElement x="380" y="10" width="175" height="20"/>
-                <textElement textAlignment="Center"><font isBold="true" size="12"/></textElement>
-                <textFieldExpression><![CDATA[$P{GRAND_TOTAL}]]></textFieldExpression>
+                <reportElement x="380" y="12" width="175" height="18"/>
+                <textElement textAlignment="Center">
+                    <font isBold="true" size="11"/>
+                </textElement>
+                <textFieldExpression><![CDATA[$P{TOTAL_QTY}]]></textFieldExpression>
             </textField>
+            <staticText>
+                <reportElement x="180" y="32" width="200" height="20"/>
+                <textElement textAlignment="Right">
+                    <font isBold="true" size="13"/>
+                </textElement>
+                <text><![CDATA[GRAND TOTAL:]]></text>
+            </staticText>
+            <textField>
+                <reportElement x="380" y="32" width="175" height="20"/>
+                <textElement textAlignment="Center">
+                    <font isBold="true" size="13"/>
+                </textElement>
+                <textFieldExpression>
+                    <![CDATA["₱" + String.format("%.2f", $P{GRAND_TOTAL})]]>
+                </textFieldExpression>
+            </textField>
+            <line>
+                <reportElement x="0" y="58" width="555" height="1"/>
+            </line>
+            <staticText>
+                <reportElement x="0" y="63" width="555" height="16"/>
+                <textElement textAlignment="Center">
+                    <font size="10" isItalic="true"/>
+                </textElement>
+                <text><![CDATA[Thank you for dining with us! We hope to see you again.]]></text>
+            </staticText>
         </band>
     </summary>
 

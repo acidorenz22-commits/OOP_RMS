@@ -5,21 +5,43 @@
               topMargin="20" bottomMargin="20">
 
     <queryString>
-        <![CDATA[SELECT * FROM menu]]>
+        <![CDATA[
+            SELECT
+                m.id,
+                m.item_name,
+                m.price,
+                m.stock,
+                m.status,
+                COALESCE(SUM(o.quantity), 0) AS sold_today
+            FROM menu m
+            LEFT JOIN orders o ON m.item_name = o.item_name
+            GROUP BY m.id
+            ORDER BY m.item_name
+        ]]>
     </queryString>
 
-    <field name="id"        class="java.lang.Integer"/>
-    <field name="item_name" class="java.lang.String"/>
-    <field name="price"     class="java.lang.Double"/>
+    <field name="id"         class="java.lang.Integer"/>
+    <field name="item_name"  class="java.lang.String"/>
+    <field name="price"      class="java.lang.Double"/>
+    <field name="stock"      class="java.lang.Integer"/>
+    <field name="status"     class="java.lang.String"/>
+    <field name="sold_today" class="java.lang.Integer"/>
 
     <title>
-        <band height="50">
+        <band height="70">
             <staticText>
-                <reportElement x="0" y="10" width="555" height="30"/>
+                <reportElement x="0" y="8" width="555" height="28"/>
                 <textElement textAlignment="Center">
                     <font size="18" isBold="true"/>
                 </textElement>
-                <text><![CDATA[Restaurant Menu]]></text>
+                <text><![CDATA[BIGTASK Restaurant — Menu Report]]></text>
+            </staticText>
+            <staticText>
+                <reportElement x="0" y="40" width="555" height="16"/>
+                <textElement textAlignment="Center">
+                    <font size="10" isItalic="true"/>
+                </textElement>
+                <text><![CDATA[Item pricing, stock remaining, and units sold today]]></text>
             </staticText>
         </band>
     </title>
@@ -27,19 +49,52 @@
     <columnHeader>
         <band height="25">
             <staticText>
-                <reportElement x="0"   y="0" width="80"  height="25" backcolor="#4CAF50" mode="Opaque"/>
-                <textElement textAlignment="Center"><font isBold="true"/></textElement>
+                <reportElement x="0" y="0" width="40" height="25"
+                    backcolor="#1B4332" forecolor="#FFFFFF" mode="Opaque"/>
+                <textElement textAlignment="Center">
+                    <font isBold="true" size="9"/>
+                </textElement>
                 <text><![CDATA[ID]]></text>
             </staticText>
             <staticText>
-                <reportElement x="80"  y="0" width="320" height="25" backcolor="#4CAF50" mode="Opaque"/>
-                <textElement textAlignment="Center"><font isBold="true"/></textElement>
+                <reportElement x="40" y="0" width="180" height="25"
+                    backcolor="#1B4332" forecolor="#FFFFFF" mode="Opaque"/>
+                <textElement textAlignment="Center">
+                    <font isBold="true" size="9"/>
+                </textElement>
                 <text><![CDATA[Item Name]]></text>
             </staticText>
             <staticText>
-                <reportElement x="400" y="0" width="155" height="25" backcolor="#4CAF50" mode="Opaque"/>
-                <textElement textAlignment="Center"><font isBold="true"/></textElement>
-                <text><![CDATA[Price]]></text>
+                <reportElement x="220" y="0" width="90" height="25"
+                    backcolor="#1B4332" forecolor="#FFFFFF" mode="Opaque"/>
+                <textElement textAlignment="Center">
+                    <font isBold="true" size="9"/>
+                </textElement>
+                <text><![CDATA[Price (₱)]]></text>
+            </staticText>
+            <staticText>
+                <reportElement x="310" y="0" width="80" height="25"
+                    backcolor="#1B4332" forecolor="#FFFFFF" mode="Opaque"/>
+                <textElement textAlignment="Center">
+                    <font isBold="true" size="9"/>
+                </textElement>
+                <text><![CDATA[Stock Left]]></text>
+            </staticText>
+            <staticText>
+                <reportElement x="390" y="0" width="80" height="25"
+                    backcolor="#1B4332" forecolor="#FFFFFF" mode="Opaque"/>
+                <textElement textAlignment="Center">
+                    <font isBold="true" size="9"/>
+                </textElement>
+                <text><![CDATA[Sold Today]]></text>
+            </staticText>
+            <staticText>
+                <reportElement x="470" y="0" width="85" height="25"
+                    backcolor="#1B4332" forecolor="#FFFFFF" mode="Opaque"/>
+                <textElement textAlignment="Center">
+                    <font isBold="true" size="9"/>
+                </textElement>
+                <text><![CDATA[Status]]></text>
             </staticText>
         </band>
     </columnHeader>
@@ -47,18 +102,48 @@
     <detail>
         <band height="20">
             <textField>
-                <reportElement x="0"   y="0" width="80"  height="20"/>
-                <textElement textAlignment="Center"/>
+                <reportElement x="0" y="0" width="40" height="20"/>
+                <textElement textAlignment="Center">
+                    <font size="9"/>
+                </textElement>
                 <textFieldExpression><![CDATA[$F{id}]]></textFieldExpression>
             </textField>
             <textField>
-                <reportElement x="80"  y="0" width="320" height="20"/>
+                <reportElement x="40" y="0" width="180" height="20"/>
+                <textElement>
+                    <font size="9"/>
+                </textElement>
                 <textFieldExpression><![CDATA[$F{item_name}]]></textFieldExpression>
             </textField>
             <textField>
-                <reportElement x="400" y="0" width="155" height="20"/>
-                <textElement textAlignment="Center"/>
-                <textFieldExpression><![CDATA[$F{price}]]></textFieldExpression>
+                <reportElement x="220" y="0" width="90" height="20"/>
+                <textElement textAlignment="Center">
+                    <font size="9"/>
+                </textElement>
+                <textFieldExpression>
+                    <![CDATA["₱" + String.format("%.2f", $F{price})]]>
+                </textFieldExpression>
+            </textField>
+            <textField>
+                <reportElement x="310" y="0" width="80" height="20"/>
+                <textElement textAlignment="Center">
+                    <font size="9"/>
+                </textElement>
+                <textFieldExpression><![CDATA[$F{stock}]]></textFieldExpression>
+            </textField>
+            <textField>
+                <reportElement x="390" y="0" width="80" height="20"/>
+                <textElement textAlignment="Center">
+                    <font size="9"/>
+                </textElement>
+                <textFieldExpression><![CDATA[$F{sold_today}]]></textFieldExpression>
+            </textField>
+            <textField>
+                <reportElement x="470" y="0" width="85" height="20"/>
+                <textElement textAlignment="Center">
+                    <font size="9"/>
+                </textElement>
+                <textFieldExpression><![CDATA[$F{status}]]></textFieldExpression>
             </textField>
         </band>
     </detail>

@@ -1,42 +1,53 @@
 package com.OOPRms;
 
 import java.sql.Connection;
-import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
 public class ViewMenu {
 
-    // ✅ This is what Main.java needs — returns a List
+    // All items for staff panel
     public static List<Object[]> getItems() {
-        List<Object[]> items = new ArrayList<>();
-        String sql = "SELECT * FROM menu";
-
-        try {
-            Connection conn = DatabaseConnection.connect();
-            PreparedStatement pstmt = conn.prepareStatement(sql);
-            ResultSet rs = pstmt.executeQuery();
-
+        List<Object[]> list = new ArrayList<>();
+        String sql = "SELECT id, item_name, price, stock, status FROM menu";
+        try (Connection conn = DatabaseConnection.connect();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
             while (rs.next()) {
-                Object[] row = new Object[3];
-                row[0] = rs.getInt("id");
-                row[1] = rs.getString("item_name");
-                row[2] = rs.getDouble("price");
-                items.add(row);
+                list.add(new Object[]{
+                    rs.getInt("id"),
+                    rs.getString("item_name"),
+                    rs.getDouble("price"),
+                    rs.getInt("stock"),
+                    rs.getString("status")
+                });
             }
-
         } catch (Exception e) {
-            System.out.println("Error fetching items: " + e.getMessage());
+            System.out.println("View error: " + e.getMessage());
         }
-
-        return items;
+        return list;
     }
 
-    // ✅ Keep this too if you still need console printing
-    public static void viewItems() {
-        for (Object[] row : getItems()) {
-            System.out.println(row[0] + " | " + row[1] + " | " + row[2]);
+    // Only available items for customer panel
+    public static List<Object[]> getActiveItems() {
+        List<Object[]> list = new ArrayList<>();
+        String sql = "SELECT id, item_name, price FROM menu "
+                   + "WHERE status = 'available'";
+        try (Connection conn = DatabaseConnection.connect();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+            while (rs.next()) {
+                list.add(new Object[]{
+                    rs.getInt("id"),
+                    rs.getString("item_name"),
+                    rs.getDouble("price")
+                });
+            }
+        } catch (Exception e) {
+            System.out.println("View available error: " + e.getMessage());
         }
+        return list;
     }
 }

@@ -2,26 +2,20 @@ package com.OOPRms;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.SQLException;
 
 public class AddMenu {
-
-    public static void addItem(String itemName, double price) {
-
-        String sql = "INSERT INTO menu(item_name, price) VALUES(?, ?)";
-
-        try {
-            Connection conn = DatabaseConnection.connect();
-            PreparedStatement pstmt = conn.prepareStatement(sql);
-
-            pstmt.setString(1, itemName);
-            pstmt.setDouble(2, price);
-
-            pstmt.executeUpdate();
-
-            System.out.println("Menu item added!");
-
-        } catch (Exception e) {
-            System.out.println(e);
+    public static void addItem(String name, double price, int stock) {
+        String sql = "INSERT INTO menu (item_name, price, stock, status) "
+                   + "VALUES (?, ?, ?, 'available')";
+        try (Connection conn = DatabaseConnection.connect();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, name);
+            ps.setDouble(2, price);
+            ps.setInt(3, stock);
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            System.out.println("Add error: " + e.getMessage());
         }
     }
 }
