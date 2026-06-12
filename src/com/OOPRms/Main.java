@@ -321,16 +321,49 @@ public class Main extends Application {
     }
 
     private void addToOrder(String name, double price) {
+        // Get current stock from DB
+        int availableStock = 0;
+        String sql = "SELECT stock FROM menu WHERE item_name = ? AND status = 'available'";
+        try (java.sql.Connection conn = DatabaseConnection.connect();
+             java.sql.PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, name);
+            java.sql.ResultSet rs = ps.executeQuery();
+            if (rs.next()) availableStock = rs.getInt("stock");
+        } catch (Exception e) {
+            System.out.println("Stock check error: " + e.getMessage());
+        }
+
+        // Check how many are already in the current order
+        int alreadyOrdered = 0;
+        for (OrderItem item : orderData) {
+            if (item.getName().equals(name)) {
+                alreadyOrdered = item.getQuantity();
+                break;
+            }
+        }
+
+        // Block if adding one more exceeds available stock
+        if (alreadyOrdered >= availableStock) {
+            customerStatus.setText(
+                "Sorry, only " + availableStock + " of " + name + " available.");
+            customerStatus.setStyle(
+                "-fx-font-size:12px;-fx-text-fill:#7B4B2A;");
+            return;
+        }
+
+        // Add or increment
         for (OrderItem item : orderData) {
             if (item.getName().equals(name)) {
                 item.addQuantity(1);
                 orderTable.refresh();
                 updateOrderSummary();
+                customerStatus.setText("");
                 return;
             }
         }
         orderData.add(new OrderItem(name, price, 1));
         updateOrderSummary();
+        customerStatus.setText("");
     }
 
     private void updateOrderSummary() {
@@ -351,16 +384,69 @@ public class Main extends Application {
             return;
         }
 
+        // Calculate totals first
+        double grandTotal = 0;
+        int totalQty = 0;
+        for (OrderItem item : orderData) {
+            grandTotal += item.getSubtotal();
+            totalQty   += item.getQuantity();
+        }
+
+        // ── Ask how much the customer paid ────────────────
+        final double finalGrandTotal = grandTotal;
+
+        TextInputDialog payDialog = new TextInputDialog();
+        payDialog.setTitle("Payment");
+        payDialog.setHeaderText(
+            "Grand Total: ₱" + String.format("%.2f", grandTotal));
+        payDialog.setContentText("Enter amount paid by customer:");
+        payDialog.getEditor().setStyle(
+            "-fx-font-size:14px;-fx-padding:6px;");
+
+        // Style the dialog
+        payDialog.getDialogPane().setStyle(
+            "-fx-background-color:#F8F4E3;");
+
+        java.util.Optional<String> result = payDialog.showAndWait();
+
+        // If customer closed the dialog without paying, cancel
+        if (!result.isPresent() || result.get().trim().isEmpty()) {
+            customerStatus.setText("Payment cancelled.");
+            customerStatus.setStyle("-fx-font-size:12px;-fx-text-fill:#7B4B2A;");
+            return;
+        }
+
+        double amountPaid;
+        try {
+            amountPaid = Double.parseDouble(result.get().trim());
+        } catch (NumberFormatException e) {
+            customerStatus.setText("Invalid amount entered.");
+            customerStatus.setStyle("-fx-font-size:12px;-fx-text-fill:#7B4B2A;");
+            return;
+        }
+
+        // Check if paid enough
+        if (amountPaid < grandTotal) {
+            customerStatus.setText(
+                "Insufficient payment. Need ₱" +
+                String.format("%.2f", grandTotal - amountPaid) + " more.");
+            customerStatus.setStyle("-fx-font-size:12px;-fx-text-fill:#7B4B2A;");
+            return;
+        }
+
+        double changeAmount = amountPaid - grandTotal;
+
         // Generate unique order reference and timestamp
         String now = LocalDateTime.now()
             .format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
         String orderRef = "ORD-" + LocalDateTime.now()
             .format(DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss"));
 
-        // Save orders to DB with order_ref and time
+        // Save orders to DB with amount paid and change
         String insert = "INSERT INTO orders "
-                      + "(order_ref, item_name, quantity, total, order_time) "
-                      + "VALUES (?, ?, ?, ?, ?)";
+                      + "(order_ref, item_name, quantity, total, "
+                      + "order_time, amount_paid, change_amount) "
+                      + "VALUES (?, ?, ?, ?, ?, ?, ?)";
         try (java.sql.Connection conn = DatabaseConnection.connect();
              java.sql.PreparedStatement ps = conn.prepareStatement(insert)) {
             for (OrderItem item : orderData) {
@@ -369,6 +455,8 @@ public class Main extends Application {
                 ps.setInt(3,    item.getQuantity());
                 ps.setDouble(4, item.getSubtotal());
                 ps.setString(5, now);
+                ps.setDouble(6, amountPaid);
+                ps.setDouble(7, changeAmount);
                 ps.executeUpdate();
 
                 // Deduct stock
@@ -378,32 +466,30 @@ public class Main extends Application {
             System.out.println("Save order error: " + e.getMessage());
         }
 
-        double grandTotal = 0;
-        int totalQty = 0;
-        for (OrderItem item : orderData) {
-            grandTotal += item.getSubtotal();
-            totalQty   += item.getQuantity();
-        }
-
         // Generate receipt
         ReportGenerator.generateBillingReport(
-            "Walk-in Customer", grandTotal, totalQty, orderRef, now);
+            "Walk-in Customer", grandTotal, totalQty,
+            orderRef, now, amountPaid, changeAmount);
 
+        // Show summary alert with change
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
         alert.setTitle("Bill Out");
         alert.setHeaderText("Order Complete!");
         alert.setContentText(
             "Order Ref: " + orderRef + "\n" +
             "Total Items: " + totalQty + "\n" +
-            "Grand Total: ₱" + String.format("%.2f", grandTotal) + "\n\n" +
+            "Grand Total: ₱" + String.format("%.2f", grandTotal) + "\n" +
+            "Amount Paid: ₱" + String.format("%.2f", amountPaid) + "\n" +
+            "Change:      ₱" + String.format("%.2f", changeAmount) + "\n\n" +
             "Receipt saved to reports/output/");
         alert.showAndWait();
 
         orderData.clear();
         updateOrderSummary();
-        refreshCustomerMenu(); // refresh to show updated stock
+        refreshCustomerMenu();
 
-        customerStatus.setText("Receipt printed — " + orderRef);
+        customerStatus.setText(
+            "Receipt printed — Change: ₱" + String.format("%.2f", changeAmount));
         customerStatus.setStyle(
             "-fx-font-size:12px;-fx-text-fill:" + C_MID_GREEN + ";");
     }
@@ -508,6 +594,7 @@ public class Main extends Application {
         form.add(lblPrice, 0, 2); form.add(staffPriceField, 1, 2);
         form.add(lblStock, 0, 3); form.add(staffStockField, 1, 3);
 
+        // ── CRUD Buttons ───────────────────────────────────
         Button btnAdd    = new Button("Add");
         Button btnUpdate = new Button("Update");
         Button btnDelete = new Button("Delete");
@@ -541,6 +628,7 @@ public class Main extends Application {
         crudBtns.setPadding(new Insets(10, 15, 10, 15));
         crudBtns.setStyle("-fx-background-color:" + C_CREAM_DARK + ";");
 
+        // ── Status Buttons ─────────────────────────────────
         Button btnAvailable = new Button("Set Available");
         Button btnOOS       = new Button("Set Out of Stock");
 
@@ -566,20 +654,29 @@ public class Main extends Application {
         VBox statusSection = new VBox(4, statusSectionLabel, statusBtns);
         statusSection.setPadding(new Insets(10, 15, 5, 15));
 
+        // ── Report Buttons ─────────────────────────────────
         Label reportSectionLabel = new Label("GENERATE REPORTS");
         reportSectionLabel.setStyle(
             "-fx-font-size:11px;-fx-font-weight:bold;" +
             "-fx-text-fill:" + C_LIGHT_GREEN + ";");
 
-        Button btnMenuReport   = new Button("Menu Report");
-        Button btnOrdersReport = new Button("Orders Report");
+        Button btnMenuReport    = new Button("Menu Report");
+        Button btnOrdersReport  = new Button("Orders Report");
+        Button btnClearOrders   = new Button("Clear All Orders");
 
         String btnReport =
             "-fx-background-color:" + C_DARK_GREEN + ";-fx-text-fill:" + C_WHITE + ";" +
             "-fx-font-weight:bold;-fx-font-size:12px;" +
             "-fx-background-radius:5px;-fx-cursor:hand;";
+
         btnMenuReport.setStyle(btnReport);   btnMenuReport.setPrefWidth(115);
         btnOrdersReport.setStyle(btnReport); btnOrdersReport.setPrefWidth(115);
+
+        btnClearOrders.setStyle(
+            "-fx-background-color:#7B4B2A;-fx-text-fill:white;" +
+            "-fx-font-weight:bold;-fx-font-size:12px;" +
+            "-fx-background-radius:5px;-fx-cursor:hand;");
+        btnClearOrders.setPrefWidth(130);
 
         btnMenuReport.setOnAction(e -> {
             ReportGenerator.generateMenuReport();
@@ -589,8 +686,19 @@ public class Main extends Application {
             ReportGenerator.generateOrdersReport();
             setStaffStatus("Orders report saved.", true);
         });
+        btnClearOrders.setOnAction(e -> {
+            Alert confirm = new Alert(Alert.AlertType.CONFIRMATION,
+                "Clear all orders for today?\nThis cannot be undone.",
+                ButtonType.YES, ButtonType.NO);
+            confirm.showAndWait().ifPresent(btn -> {
+                if (btn == ButtonType.YES) {
+                    DatabaseConnection.clearOrders();
+                    setStaffStatus("All orders cleared.", true);
+                }
+            });
+        });
 
-        HBox reportBtns = new HBox(8, btnMenuReport, btnOrdersReport);
+        HBox reportBtns = new HBox(8, btnMenuReport, btnOrdersReport, btnClearOrders);
         VBox reportSection = new VBox(4, reportSectionLabel, reportBtns);
         reportSection.setPadding(new Insets(5, 15, 10, 15));
 

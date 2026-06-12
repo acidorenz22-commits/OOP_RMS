@@ -4,6 +4,8 @@
               columnWidth="555" leftMargin="20" rightMargin="20"
               topMargin="20" bottomMargin="20">
 
+    <parameter name="REPORT_DATE" class="java.lang.String"/>
+
     <queryString>
         <![CDATA[
             SELECT
@@ -28,7 +30,7 @@
     <field name="sold_today" class="java.lang.Integer"/>
 
     <title>
-        <band height="70">
+        <band height="85">
             <staticText>
                 <reportElement x="0" y="8" width="555" height="28"/>
                 <textElement textAlignment="Center">
@@ -43,6 +45,15 @@
                 </textElement>
                 <text><![CDATA[Item pricing, stock remaining, and units sold today]]></text>
             </staticText>
+            <textField>
+                <reportElement x="0" y="60" width="555" height="16"/>
+                <textElement textAlignment="Center">
+                    <font size="10" isBold="true"/>
+                </textElement>
+                <textFieldExpression>
+                    <![CDATA["Report Generated: " + $P{REPORT_DATE}]]>
+                </textFieldExpression>
+            </textField>
         </band>
     </title>
 

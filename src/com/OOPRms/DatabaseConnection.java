@@ -2,8 +2,6 @@ package com.OOPRms;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 
@@ -35,14 +33,16 @@ public class DatabaseConnection {
                             + "item_name TEXT NOT NULL, "
                             + "quantity INTEGER NOT NULL, "
                             + "total REAL NOT NULL, "
-                            + "order_time TEXT NOT NULL)";
+                            + "order_time TEXT NOT NULL, "
+                            + "amount_paid REAL NOT NULL DEFAULT 0, "
+                            + "change_amount REAL NOT NULL DEFAULT 0)";
 
         try (Connection conn = connect();
              Statement stmt = conn.createStatement()) {
             stmt.execute(createMenu);
             stmt.execute(createOrders);
 
-            // Add new columns to existing DB if not present
+            // Add columns to existing DB if not present
             try { stmt.execute(
                 "ALTER TABLE menu ADD COLUMN stock INTEGER NOT NULL DEFAULT 0");
             } catch (SQLException ignored) {}
@@ -52,6 +52,12 @@ public class DatabaseConnection {
             try { stmt.execute(
                 "ALTER TABLE orders ADD COLUMN order_time TEXT NOT NULL DEFAULT ''");
             } catch (SQLException ignored) {}
+            try { stmt.execute(
+                "ALTER TABLE orders ADD COLUMN amount_paid REAL NOT NULL DEFAULT 0");
+            } catch (SQLException ignored) {}
+            try { stmt.execute(
+                "ALTER TABLE orders ADD COLUMN change_amount REAL NOT NULL DEFAULT 0");
+            } catch (SQLException ignored) {}
 
             // Migrate old status values
             stmt.execute(
@@ -60,7 +66,6 @@ public class DatabaseConnection {
                 "UPDATE menu SET status = 'out_of_stock' WHERE status = 'inactive'");
 
             System.out.println("Tables ready.");
-            clearOrders();
         } catch (SQLException e) {
             System.out.println("Error creating tables: " + e.getMessage());
         }

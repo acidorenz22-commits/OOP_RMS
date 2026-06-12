@@ -22,6 +22,11 @@ public class ReportGenerator {
             .format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
     }
 
+    private static String reportDate() {
+        return LocalDateTime.now()
+            .format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+    }
+
     private static void exportToPdf(JasperPrint print, String outputPath)
             throws JRException {
         JRPdfExporter exporter = new JRPdfExporter();
@@ -40,10 +45,15 @@ public class ReportGenerator {
             new File(OUTPUT_PATH).mkdirs();
             String jrxml  = REPORTS_PATH + "menu_report.jrxml";
             String jasper = REPORTS_PATH + "menu_report.jasper";
+            new File(jasper).delete();
             JasperCompileManager.compileReportToFile(jrxml, jasper);
+
+            Map<String, Object> params = new HashMap<>();
+            params.put("REPORT_DATE", reportDate());
+
             Connection conn = DatabaseConnection.connect();
             JasperPrint print = JasperFillManager.fillReport(
-                jasper, new HashMap<>(), conn);
+                jasper, params, conn);
             String output = OUTPUT_PATH + "menu_report_" + timestamp() + ".pdf";
             exportToPdf(print, output);
             System.out.println("Menu report generated: " + output);
@@ -58,10 +68,15 @@ public class ReportGenerator {
             new File(OUTPUT_PATH).mkdirs();
             String jrxml  = REPORTS_PATH + "orders_report.jrxml";
             String jasper = REPORTS_PATH + "orders_report.jasper";
+            new File(jasper).delete();
             JasperCompileManager.compileReportToFile(jrxml, jasper);
+
+            Map<String, Object> params = new HashMap<>();
+            params.put("REPORT_DATE", reportDate());
+
             Connection conn = DatabaseConnection.connect();
             JasperPrint print = JasperFillManager.fillReport(
-                jasper, new HashMap<>(), conn);
+                jasper, params, conn);
             String output = OUTPUT_PATH + "orders_report_" + timestamp() + ".pdf";
             exportToPdf(print, output);
             System.out.println("Orders report generated: " + output);
@@ -72,20 +87,24 @@ public class ReportGenerator {
     }
 
     public static void generateBillingReport(
-            String customerName, double grandTotal,
-            int totalQty, String orderRef, String orderTime) {
+            String customerName, double grandTotal, int totalQty,
+            String orderRef, String orderTime,
+            double amountPaid, double changeAmount) {
         try {
             new File(OUTPUT_PATH).mkdirs();
             String jrxml  = REPORTS_PATH + "billing_report.jrxml";
             String jasper = REPORTS_PATH + "billing_report.jasper";
+            new File(jasper).delete();
             JasperCompileManager.compileReportToFile(jrxml, jasper);
 
             Map<String, Object> params = new HashMap<>();
-            params.put("CUSTOMER_NAME", customerName);
-            params.put("GRAND_TOTAL",   grandTotal);
-            params.put("TOTAL_QTY",     totalQty);
-            params.put("ORDER_REF",     orderRef);
-            params.put("ORDER_TIME",    orderTime);
+            params.put("CUSTOMER_NAME",  customerName);
+            params.put("GRAND_TOTAL",    grandTotal);
+            params.put("TOTAL_QTY",      totalQty);
+            params.put("ORDER_REF",      orderRef);
+            params.put("ORDER_TIME",     orderTime);
+            params.put("AMOUNT_PAID",    amountPaid);
+            params.put("CHANGE_AMOUNT",  changeAmount);
 
             Connection conn = DatabaseConnection.connect();
             JasperPrint print = JasperFillManager.fillReport(

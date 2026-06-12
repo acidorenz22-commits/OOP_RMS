@@ -4,14 +4,16 @@
               columnWidth="555" leftMargin="20" rightMargin="20"
               topMargin="20" bottomMargin="20">
 
-    <parameter name="CUSTOMER_NAME" class="java.lang.String"/>
-    <parameter name="GRAND_TOTAL"   class="java.lang.Double"/>
-    <parameter name="TOTAL_QTY"     class="java.lang.Integer"/>
-    <parameter name="ORDER_REF"     class="java.lang.String"/>
-    <parameter name="ORDER_TIME"    class="java.lang.String"/>
+    <parameter name="CUSTOMER_NAME"  class="java.lang.String"/>
+    <parameter name="GRAND_TOTAL"    class="java.lang.Double"/>
+    <parameter name="TOTAL_QTY"      class="java.lang.Integer"/>
+    <parameter name="ORDER_REF"      class="java.lang.String"/>
+    <parameter name="ORDER_TIME"     class="java.lang.String"/>
+    <parameter name="AMOUNT_PAID"    class="java.lang.Double"/>
+    <parameter name="CHANGE_AMOUNT"  class="java.lang.Double"/>
 
     <queryString>
-        <![CDATA[SELECT * FROM orders]]>
+        <![CDATA[SELECT * FROM orders WHERE order_ref = $P{ORDER_REF}]]>
     </queryString>
 
     <field name="item_name" class="java.lang.String"/>
@@ -121,10 +123,12 @@
     </detail>
 
     <summary>
-        <band height="80">
+        <band height="120">
             <line>
                 <reportElement x="0" y="5" width="555" height="1"/>
             </line>
+
+            <!-- Total Items -->
             <staticText>
                 <reportElement x="180" y="12" width="200" height="18"/>
                 <textElement textAlignment="Right">
@@ -139,15 +143,17 @@
                 </textElement>
                 <textFieldExpression><![CDATA[$P{TOTAL_QTY}]]></textFieldExpression>
             </textField>
+
+            <!-- Grand Total -->
             <staticText>
-                <reportElement x="180" y="32" width="200" height="20"/>
+                <reportElement x="180" y="34" width="200" height="20"/>
                 <textElement textAlignment="Right">
                     <font isBold="true" size="13"/>
                 </textElement>
                 <text><![CDATA[GRAND TOTAL:]]></text>
             </staticText>
             <textField>
-                <reportElement x="380" y="32" width="175" height="20"/>
+                <reportElement x="380" y="34" width="175" height="20"/>
                 <textElement textAlignment="Center">
                     <font isBold="true" size="13"/>
                 </textElement>
@@ -155,11 +161,48 @@
                     <![CDATA["₱" + String.format("%.2f", $P{GRAND_TOTAL})]]>
                 </textFieldExpression>
             </textField>
+
+            <!-- Amount Paid -->
+            <staticText>
+                <reportElement x="180" y="58" width="200" height="18"/>
+                <textElement textAlignment="Right">
+                    <font isBold="true" size="11"/>
+                </textElement>
+                <text><![CDATA[Amount Paid:]]></text>
+            </staticText>
+            <textField>
+                <reportElement x="380" y="58" width="175" height="18"/>
+                <textElement textAlignment="Center">
+                    <font isBold="true" size="11"/>
+                </textElement>
+                <textFieldExpression>
+                    <![CDATA["₱" + String.format("%.2f", $P{AMOUNT_PAID})]]>
+                </textFieldExpression>
+            </textField>
+
+            <!-- Change -->
+            <staticText>
+                <reportElement x="180" y="78" width="200" height="18"/>
+                <textElement textAlignment="Right">
+                    <font isBold="true" size="11"/>
+                </textElement>
+                <text><![CDATA[Change:]]></text>
+            </staticText>
+            <textField>
+                <reportElement x="380" y="78" width="175" height="18"/>
+                <textElement textAlignment="Center">
+                    <font isBold="true" size="11"/>
+                </textElement>
+                <textFieldExpression>
+                    <![CDATA["₱" + String.format("%.2f", $P{CHANGE_AMOUNT})]]>
+                </textFieldExpression>
+            </textField>
+
             <line>
-                <reportElement x="0" y="58" width="555" height="1"/>
+                <reportElement x="0" y="100" width="555" height="1"/>
             </line>
             <staticText>
-                <reportElement x="0" y="63" width="555" height="16"/>
+                <reportElement x="0" y="105" width="555" height="14"/>
                 <textElement textAlignment="Center">
                     <font size="10" isItalic="true"/>
                 </textElement>
